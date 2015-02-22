@@ -1,0 +1,7 @@
+api:
+    prefix: "/api"
+    version: 1
+    resources: ~
+
+routes:
+    - "Nogo\\Api\\Controller\\ResourceController"

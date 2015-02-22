@@ -1,0 +1,29 @@
+{
+    "name": "nogo/framework",
+    "description": "mvc extension to slim framework",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Danilo Kühn",
+            "email": "dk@nogo-software.de",
+            "homepage": "http://nogo-software.de"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "slim/slim": "2.*",
+        "aura/sql": "2.*",
+        "aura/sqlquery": "2.*",
+        "symfony/yaml": "2.6.*",
+        "hampel/json": "~2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "*"
+    },
+    "autoload": {
+        "psr-0": {"": "src/"}
+    },
+    "config": {
+        "bin-dir": "bin"
+    }
+}
