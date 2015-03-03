@@ -3,9 +3,10 @@ namespace Nogo\Api\Middleware;
 
 use Slim\Middleware;
 
-class ResourceIdentifierMiddleware extends Middleware
+class ResourceIdentifier extends Middleware
 {
     protected $route;
+    protected $allowed = [];
 
     public function __construct($route)
     {
@@ -22,16 +23,12 @@ class ResourceIdentifierMiddleware extends Middleware
 
     public function onBeforeDispatch()
     {
-        $app = $this->app;
-        
-        // Identify resource 
-        $route = $app->router()->getCurrentRoute();
+        $route = $this->app->router()->getCurrentRoute();
         $name = $route->getParam('resource');
-//
-//        $tables = $app->schemas->fetchTableList();
-//        if (!in_array($name, $tables)) {
-//            $app->halt(404, 'Resource [' . $name . '] not found.');
-//        }
+        $tables = $this->app->schemas->fetchTableList();
+        if (!in_array($name, $tables)) {
+            $this->app->halt(404, 'Resource [' . $name . '] not found.');
+        }
     }
 
 }

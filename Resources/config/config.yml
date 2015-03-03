@@ -4,4 +4,4 @@ api:
     resources: ~
 
 routes:
-    - "Nogo\\Api\\Controller\\ResourceController"
+    - "Nogo\\Api\\Controller\\Resource"

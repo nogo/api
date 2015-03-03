@@ -113,22 +113,60 @@ class Repository
     public function findBy($name, $value)
     {
         $select = $this->factory->newSelect();
-        $select->cols(['*'])
+        $select->cols([$this->tableName() . '.*'])
                 ->from($this->tableName())
-                ->where($name . ' = :' . $name)
+                ->where($this->tableName() . '.' . $name . ' = :' . $name)
                 ->orderBy([$this->identifier() . ' ASC']);
-        $result = $this->connection->fetchOne($select->__toString(), [ $name => $value ]);
+
+        $bind = [ $name => $value ];
+
+        // add relations
+        foreach ($this->relations as $relation) {
+            $ref = new \ReflectionObject($relation);
+            if ($ref->implementsInterface(Relation)) {
+                $relation->execute($select);
+            }
+        }
+
+        // add scopes
+        foreach ($this->scopes as $scope) {
+            $ref = new \ReflectionObject($scope);
+            if ($ref->implementsInterface(Scope)) {
+                $scope->execute($select, $bind);
+            }
+        }
+
+        $result = $this->connection->fetchOne($select->__toString(), $bind);
         return $result;
     }
 
     public function findAll()
     {
         $select = $this->factory->newSelect();
-        $select->cols(['*'])
+        $select->cols([$this->tableName() . '.*'])
                 ->from($this->tableName())
-                ->orderBy([$this->identifier() . ' ASC']);
+                ->orderBy([$this->tableName() . '.' .$this->identifier() . ' ASC']);
 
-        return $this->connection->fetchAll($select->__toString());
+
+        $bind = [ ];
+
+        // add relations
+        foreach ($this->relations as $relation) {
+            $ref = new \ReflectionObject($relation);
+            if ($ref->implementsInterface(Relation)) {
+                $relation->execute($select);
+            }
+        }
+
+        // add scopes
+        foreach ($this->scopes as $scope) {
+            $ref = new \ReflectionObject($scope);
+            if ($ref->implementsInterface(Scope)) {
+                $scope->execute($select, $bind);
+            }
+        }
+
+        return $this->connection->fetchAll($select->__toString(), $bind);
     }
 
     /**
@@ -169,7 +207,17 @@ class Repository
         $delete = $this->factory->newDelete();
         $delete->from($this->tableName())
                 ->where($this->identifier() . ' = :' . $this->identifier());
+
+        $bind = [ $this->identifier() => $id ];
+
+        // add scopes
+        foreach ($this->scopes as $scope) {
+            $ref = new \ReflectionObject($scope);
+            if ($ref->implementsInterface(Scope)) {
+                $scope->execute($delete, $bind);
+            }
+        }
         
-        return $this->connection->perform($delete, array($this->identifier() => $id));
+        return $this->connection->perform($delete, $bind)->rowCount();
     }
 }

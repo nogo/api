@@ -1,6 +1,6 @@
 {
-    "name": "nogo/framework",
-    "description": "mvc extension to slim framework",
+    "name": "nogo/api",
+    "description": "Api server ",
     "license": "MIT",
     "authors": [
         {
@@ -11,19 +11,12 @@
     ],
     "require": {
         "php": ">=5.4.0",
-        "slim/slim": "2.*",
-        "aura/sql": "2.*",
-        "aura/sqlquery": "2.*",
-        "symfony/yaml": "2.6.*",
-        "hampel/json": "~2.0"
+        "nogo/framework": "dev-master"
     },
     "require-dev": {
         "phpunit/phpunit": "*"
     },
     "autoload": {
         "psr-0": {"": "src/"}
-    },
-    "config": {
-        "bin-dir": "bin"
     }
 }

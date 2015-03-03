@@ -5,7 +5,7 @@ use Nogo\Framework\Database\Connector;
 use Aura\Filter\FilterFactory;
 use Slim\Middleware;
 
-class InitMiddleware extends Middleware
+class Initialize extends Middleware
 {
     
     public function call() {

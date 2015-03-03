@@ -4,12 +4,12 @@ namespace Nogo\Api\Controller;
 use Hampel\Json\Json;
 use Hampel\Json\JsonException;
 use Nogo\Api\Database\Repository;
-use Nogo\Api\Middleware\InitMiddleware;
-use Nogo\Api\Middleware\ResourceIdentifierMiddleware;
+use Nogo\Api\Middleware\Initialize;
+use Nogo\Api\Middleware\ResourceIdentifier;
 use Nogo\Framework\Controller\Controller;
 use Slim\Slim;
 
-class ResourceController implements Controller
+class Resource implements Controller
 {
     /**
      * @var Slim
@@ -22,8 +22,8 @@ class ResourceController implements Controller
         $api_config = $this->app->config('api');
 
         // Routes
-        $this->app->add(new InitMiddleware());
-        $this->app->add(new ResourceIdentifierMiddleware('/api'));
+        $this->app->add(new Initialize());
+        $this->app->add(new ResourceIdentifier('/api'));
         $this->app->get($api_config['prefix'] . '/:resource/:id', [$this, 'getAction'])->conditions(['id' => '\d+']);
         $this->app->get($api_config['prefix'] . '/:resource', [$this, 'listAction']);
         $this->app->put($api_config['prefix'] . '/:resource/:id', [$this, 'putAction'])->conditions(['id' => '\d+']);
@@ -45,7 +45,7 @@ class ResourceController implements Controller
     {
         $request_data = $this->json();
         if (empty($request_data)) {
-            $this->render('Data not valid', 400);
+            $this->render([ 'msg' => 'Data not valid' ], 400);
             return;
         }
 
@@ -60,13 +60,13 @@ class ResourceController implements Controller
 
         $result = $repository->find($id);
         if ($result === false) {
-            $this->render('Not found', 404);
+            $this->render([ 'msg' => 'Not found' ], 404);
             return;
         }
 
         $request_data = $this->json();
         if (empty($request_data)) {
-            $this->render('Data not valid', 400);
+            $this->render([ 'msg' => 'Data not valid' ], 400);
             return;
         }
 
@@ -76,11 +76,15 @@ class ResourceController implements Controller
     
     public function deleteAction($resource, $id)
     {
-        $deleted = $this->repository($resource)->remove($id);
-        if ($deleted <= 0) {
-            $this->render('Not found', 404);
+        $repository = $this->repository($resource);
+
+        $result = $repository->find($id);
+        if ($result === false) {
+            $this->render([ 'msg' => 'Not found' ], 404);
+            return;
         } else {
-            $this->render('OK');
+            $repository->remove($id);
+            $this->render($result);
         }
     }
 
