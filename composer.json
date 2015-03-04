@@ -1,6 +1,6 @@
 {
     "name": "nogo/api",
-    "description": "Api server ",
+    "description": "Api server",
     "license": "MIT",
     "authors": [
         {
@@ -11,12 +11,10 @@
     ],
     "require": {
         "php": ">=5.4.0",
-        "nogo/framework": "dev-master"
+        "nogo/framework": "dev-master",
+        "hampel/json": "~2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "*"
-    },
-    "autoload": {
-        "psr-0": {"": "src/"}
     }
 }

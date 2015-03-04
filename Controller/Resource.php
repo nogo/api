@@ -6,10 +6,10 @@ use Hampel\Json\JsonException;
 use Nogo\Api\Database\Repository;
 use Nogo\Api\Middleware\Initialize;
 use Nogo\Api\Middleware\ResourceIdentifier;
-use Nogo\Framework\Controller\Controller;
+use Nogo\Framework\Controller\SlimController;
 use Slim\Slim;
 
-class Resource implements Controller
+class Resource implements SlimController
 {
     /**
      * @var Slim

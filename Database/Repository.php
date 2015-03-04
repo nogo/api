@@ -4,8 +4,11 @@ namespace Nogo\Api\Database;
 use Aura\Filter\Filter;
 use Aura\Sql\ExtendedPdo;
 use Aura\SqlQuery\QueryFactory;
+use Nogo\Framework\Database\Repository as Base;
+use Nogo\Framework\Database\Relation;
+use Nogo\Framework\Database\Scope;
 
-class Repository
+class Repository implements Base
 {
     /**
      * @var ExtendedPdo
@@ -94,15 +97,6 @@ class Repository
         return $this->findBy($this->identifier(), $id);
     }
 
-    public function findByData(array $data)
-    {
-        $result = [];
-        if (isset($data[$this->identifier()])) {
-            $result = $this->find($data[$this->identifier()]);
-        }
-        return $result;
-    }
-
     /**
      * Find one entity by name and value.
      *
@@ -137,6 +131,15 @@ class Repository
         }
 
         $result = $this->connection->fetchOne($select->__toString(), $bind);
+        return $result;
+    }
+
+    public function findByData(array $data)
+    {
+        $result = [];
+        if (isset($data[$this->identifier()])) {
+            $result = $this->find($data[$this->identifier()]);
+        }
         return $result;
     }
 
@@ -219,5 +222,10 @@ class Repository
         }
         
         return $this->connection->perform($delete, $bind)->rowCount();
+    }
+
+    public function validate(array $data)
+    {
+        
     }
 }
