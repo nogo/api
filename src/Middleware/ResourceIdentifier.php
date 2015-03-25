@@ -23,6 +23,7 @@ class ResourceIdentifier extends Middleware
 
     public function onBeforeDispatch()
     {
+        $this->app->log->debug('Call middleware [ResourceIdentifier]');
         $route = $this->app->router()->getCurrentRoute();
         $name = $route->getParam('resource');
         $tables = $this->app->schemas->fetchTableList();

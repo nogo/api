@@ -10,6 +10,7 @@ class Initialize extends Middleware
     
     public function call() {
         $app = $this->app;
+        $app->log->debug('Call middleware [Initialize]');
 
         // Database
         $db = new Connector(
