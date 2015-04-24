@@ -94,8 +94,7 @@ class Resource implements SlimController
             $name,
             $this->app->schemas->fetchTableCols($name),
             $this->app->connection,
-            $this->app->queries,
-            $this->app->filters->newFilter()
+            $this->app->queries
         );
     }
 

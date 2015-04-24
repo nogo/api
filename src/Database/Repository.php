@@ -1,7 +1,6 @@
 <?php
 namespace Nogo\Api\Database;
 
-use Aura\Filter\Filter;
 use Aura\Sql\ExtendedPdo;
 use Aura\SqlQuery\QueryFactory;
 use Nogo\Framework\Database\Repository as Base;
@@ -50,13 +49,12 @@ class Repository implements Base
      */
     protected $relations = [];
 
-    public function __construct($name, array $columns, ExtendedPdo $connection, QueryFactory $factory, Filter $filter)
+    public function __construct($name, array $columns, ExtendedPdo $connection, QueryFactory $factory)
     {
         $this->name = $name;
         $this->columns = $columns;
         $this->connection = $connection;
         $this->factory = $factory;
-        $this->filter = $filter;
         
         foreach ($this->columns as $key => $column) {
             // find primary key
