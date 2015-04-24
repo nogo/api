@@ -2,7 +2,6 @@
 namespace Nogo\Api\Middleware;
 
 use Nogo\Framework\Database\Connector;
-use Aura\Filter\FilterFactory;
 use Slim\Middleware;
 
 class Initialize extends Middleware
@@ -30,10 +29,6 @@ class Initialize extends Middleware
 
         $app->container->singleton('queries', function() use ($db) {
             return $db->getQueryFactory();
-        });
-
-        $app->container->singleton('filters', function() use ($app) {
-            return new FilterFactory($app->connection->getPdo());
         });
 
         $this->next->call();
