@@ -1,16 +1,21 @@
 <?php
+
 namespace Nogo\Api\Middleware;
 
 use Slim\Middleware;
 
 class ResourceIdentifier extends Middleware
 {
-    protected $route;
-    protected $allowed = [];
 
-    public function __construct($route)
+    protected $config;
+    protected $route = '/api';
+
+    public function __construct($config)
     {
-        $this->route = $route;
+        $this->config = $config;
+        if (isset($this->config['prefix'])) {
+            $this->route = $this->config['prefix'];
+        }
     }
 
     public function call()
@@ -18,6 +23,7 @@ class ResourceIdentifier extends Middleware
         if (strpos($this->app->request()->getPathInfo(), $this->route) !== false) {
             $this->app->hook('slim.before.dispatch', array($this, 'onBeforeDispatch'));
         }
+
         $this->next->call();
     }
 
@@ -25,9 +31,9 @@ class ResourceIdentifier extends Middleware
     {
         $this->app->log->debug('Call middleware [ResourceIdentifier]');
         $route = $this->app->router()->getCurrentRoute();
+
         $name = $route->getParam('resource');
-        $tables = $this->app->schemas->fetchTableList();
-        if (!in_array($name, $tables)) {
+        if (!array_key_exists($name, $this->config['resources'])) {
             $this->app->halt(404, 'Resource [' . $name . '] not found.');
         }
     }

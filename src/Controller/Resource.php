@@ -1,117 +1,132 @@
 <?php
+
 namespace Nogo\Api\Controller;
 
-use Hampel\Json\Json;
-use Hampel\Json\JsonException;
-use Nogo\Api\Database\Repository;
-use Nogo\Api\Middleware\Initialize;
+use Nogo\Api\Middleware\Database;
+use Nogo\Api\Middleware\Json as JsonMiddleware;
 use Nogo\Api\Middleware\ResourceIdentifier;
+use Nogo\Api\Resource\Factory;
+use Nogo\Api\View\Json as JsonView;
 use Nogo\Framework\Controller\SlimController;
 use Slim\Slim;
 
 class Resource implements SlimController
 {
+
     /**
      * @var Slim
      */
     protected $app;
 
+    /**
+     * @var array
+     */
+    protected $config;
+
+    /**
+     * @var Factory;
+     */
+    protected $factory;
+
     public function enable(Slim $app)
     {
         $this->app = $app;
-        $api_config = $this->app->config('api');
+        $this->config = $this->app->config('api');
+        $this->factory = new Factory($this->config['resources']);
 
         // Routes
-        $this->app->add(new Initialize());
-        $this->app->add(new ResourceIdentifier('/api'));
-        $this->app->get($api_config['prefix'] . '/:resource/:id', [$this, 'getAction'])->conditions(['id' => '\d+']);
-        $this->app->get($api_config['prefix'] . '/:resource', [$this, 'listAction']);
-        $this->app->put($api_config['prefix'] . '/:resource/:id', [$this, 'putAction'])->conditions(['id' => '\d+']);
-        $this->app->post($api_config['prefix'] . '/:resource', [$this, 'postAction']);
-        $this->app->delete($api_config['prefix'] . '/:resource/:id', [$this, 'deleteAction'])->conditions(['id' => '\d+']);
-    }
-
-    public function listAction($resource)
-    {
-        $this->render($this->repository($resource)->findAll());
-    }
-
-    public function getAction($resource, $id)
-    {
-        $this->render($this->repository($resource)->find($id));
-    }
-
-    public function postAction($resource)
-    {
-        $request_data = $this->json();
-        if (empty($request_data)) {
-            $this->render([ 'msg' => 'Data not valid' ], 400);
-            return;
-        }
-
-        $repository = $this->repository($resource);
-        $identifier = $repository->persist($request_data);
-        $this->render($repository->find($identifier));
-    }
-
-    public function putAction($resource, $id)
-    {
-        $repository = $this->repository($resource);
-
-        $result = $repository->find($id);
-        if ($result === false) {
-            $this->render([ 'msg' => 'Not found' ], 404);
-            return;
-        }
-
-        $request_data = $this->json();
-        if (empty($request_data)) {
-            $this->render([ 'msg' => 'Data not valid' ], 400);
-            return;
-        }
-
-        $identifier = $repository->persist($request_data);
-        $this->render($repository->find($identifier));
-    }
-    
-    public function deleteAction($resource, $id)
-    {
-        $repository = $this->repository($resource);
-
-        $result = $repository->find($id);
-        if ($result === false) {
-            $this->render([ 'msg' => 'Not found' ], 404);
-            return;
-        } else {
-            $repository->remove($id);
-            $this->render($result);
-        }
-    }
-
-    protected function repository($name)
-    {
-        return new Repository(
-            $name,
-            $this->app->schemas->fetchTableCols($name),
-            $this->app->connection,
-            $this->app->queries
-        );
+        $this->app->add(new JsonMiddleware($this->config));
+        $this->app->add(new Database());
+        $this->app->add(new ResourceIdentifier($this->config));
+        $this->app->get($this->config['prefix'] . '/:resource/:id', [$this, 'getAction'])->conditions(['id' => '\d+']);
+        $this->app->get($this->config['prefix'] . '/:resource', [$this, 'listAction']);
+        $this->app->put($this->config['prefix'] . '/:resource/:id', [$this, 'putAction'])->conditions(['id' => '\d+']);
+        $this->app->post($this->config['prefix'] . '/:resource', [$this, 'postAction']);
+        $this->app->delete($this->config['prefix'] . '/:resource/:id', [$this, 'deleteAction'])->conditions(['id' => '\d+']);
     }
 
     /**
-     * Decode json data from request
-     * @return mixed|null
+     * [GET] /$resource/
+     * @param string $resource
      */
-    protected function json()
+    public function listAction($resource)
     {
-        try {
-            $input = Json::decode(trim($this->app->request()->getBody()), true);
-        } catch (JsonException $ex) {
-            $this->app->log->error($ex->getMessage());
-            $input = null;
-        }
+        $modelClass = $this->factory->with($resource);
+        $this->render($modelClass->get()->toArray());
+    }
 
-        return $input;
+    /**
+     * [GET] /$resource/$id
+     * @param string $resource
+     * @param int $id
+     */
+    public function getAction($resource, $id)
+    {
+        $modelClass = $this->factory->with($resource);
+        $model = $modelClass->find($id);
+        if (!is_null($model)) {
+            $this->render($model->toArray());
+        } else {
+            $this->render(['error' => 'Resource could not be found.'], 404);
+        }
+    }
+
+    /**
+     * [POST] /$resource/
+     * @param type $resource
+     * @return type
+     */
+    public function postAction($resource)
+    {
+        $env = $this->app->environment();
+        if (empty($env['slim.input'])) {
+            $this->render(['error' => 'Data not valid'], 400);
+        } else {
+            $modelClass = $this->factory->getClass($resource);
+
+            $model = new $modelClass();
+            $model->fill($env['slim.input']);
+
+            $model->save();
+
+            $this->render($model->toArray());
+        }
+    }
+
+    /**
+     * [PUT] /$resource/$id
+     * @param string $resource
+     * @param int $id
+     * @return type
+     */
+    public function putAction($resource, $id)
+    {
+        $modelClass = $this->factory->with($resource);
+        $model = $modelClass->find($id);
+        if (is_null($model)) {
+            $this->render(['error' => 'Not found'], 404);
+        } else {
+            $env = $this->app->environment();
+            if (empty($env['slim.input'])) {
+                $this->render(['error' => 'Data not valid'], 400);
+            } else {
+                $model->fill($env['slim.input']);
+                $model->save();
+                $this->render($model->toArray());
+            }
+        }
+    }
+
+    public function deleteAction($resource, $id)
+    {
+        $modelClass = $this->factory->getClass($resource);
+        $model = $modelClass::find($id);
+        if (is_null($model)) {
+            $this->render(['error' => 'Not found'], 404);
+        } else {
+            $model->delete();
+            $this->render($model->toArray());
+        }
     }
 
     /**
@@ -120,22 +135,21 @@ class Resource implements SlimController
      * @param mixed $data
      * @param int $status
      */
-    protected function render($data, $status = 200)
+    protected function render(array $data, $status = 200)
     {
-        if (is_array($data)) {
-            try {
-                $body = Json::encode($data);
-                $this->app->contentType("application/json");
-            } catch (JsonException $ex) {
-                $status = 400;
-                $body = $ex->getMessage();
-            }
-        } else {
-            $body = $data;
-        }
-        
-        $this->app->response()->status($status);
-        $this->app->response()->body($body);
+        $this->app->view(new JsonView());
+
+        $this->app->response()->setStatus($status);
+
+        $this->app->render('', $data);
     }
-    
+
+    protected function modelWith(array $with = array())
+    {
+        if (isset($config['with']) && !empty($config['with'])) {
+            $with = array_merge($this->config['with'], $with);
+        }
+        return;
+    }
+
 }

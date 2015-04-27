@@ -1,25 +1,26 @@
 {
-    "name": "nogo/api",
-    "description": "Api server",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Danilo Kühn",
-            "email": "dk@nogo-software.de",
-            "homepage": "http://nogo-software.de"
-        }
-    ],
-    "require": {
-        "php": ">=5.4.0",
-        "nogo/framework": "dev-master",
-        "hampel/json": "dev-master"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "*"
-    },
-    "autoload": {
-        "psr-4": {
-            "Nogo\\Api\\": "src/"
-        }
+  "name": "nogo/api",
+  "description": "Api server",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Danilo Kühn",
+      "email": "dk@nogo-software.de",
+      "homepage": "http://nogo-software.de"
     }
+  ],
+  "require": {
+    "php": ">=5.4.0",
+    "nogo/framework": "dev-master",
+    "illuminate/database": "*",
+    "kirkbushell/eloquence": "~1.3"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Nogo\\Api\\": "src/"
+    }
+  }
 }
