@@ -17,6 +17,68 @@ class Factory implements \ArrayAccess, \Countable
     }
 
     /**
+     * Create new model object
+     * @param string $resource
+     * @param array $data
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function create($resource, array $data)
+    {
+        $modelClass = $this->getClass($resource);
+
+        $model = new $modelClass();
+        $model->fill($data);
+
+        return $model;
+    }
+
+    /**
+     * Create new model object with its relations
+     *
+     * @param string $resource
+     * @param array $data
+     * @param int $userId
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function createWith($resource, array $data)
+    {
+        $model = $this->create($resource, $data);
+
+        // Bind related models
+        if (!empty($this->config[$resource]['with'])) {
+            foreach ($this->config[$resource]['with'] as $relationName) {
+                // has related model
+                if (array_key_exists($relationName, $data)) {
+                    $relatedData = $data[$relationName];
+                    $foreignKey = $relationName . '_id';
+
+                    if (is_null($relatedData) || $relatedData === 0) {
+                        $model->$foreignKey = null;
+                    } else if (is_int($relatedData)) {
+                        $model->$foreignKey = $relatedData;
+                    } else {
+                        if (isset($relatedData['id'])) {
+                            $relatedModelClass = $this->getClass($relationName);
+                            $relatedModel = $relatedModelClass::where('user_id', $userId)->find($relatedData['id']);
+                            $model->$relationName()->associate($relatedModel);
+                        } else if (isset($relatedData['alias'])) {
+                            $relatedModelClass = $this->getClass($relationName);
+                            $relatedModel = $relatedModelClass::where('user_id', $userId)->where('alias', $relatedData['alias'])->first();
+                            if ($relatedModel == NULL) {
+                                $relatedModel = $this->create($relationName, $relatedData);
+                                $relatedModel->user_id = $userId;
+                            }
+                            $model->$relationName()->associate($relatedModel);
+                        }
+                    }
+                }
+            }
+        }
+
+        return $model;
+    }
+
+    /**
      * Model class
      * @param string $resource
      * @return \Illuminate\Database\Eloquent\Model

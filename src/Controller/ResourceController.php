@@ -3,14 +3,13 @@
 namespace Nogo\Api\Controller;
 
 use Nogo\Api\Middleware\Database;
-use Nogo\Api\Middleware\Json as JsonMiddleware;
-use Nogo\Api\Middleware\ResourceIdentifier;
+use Nogo\Api\Middleware\ApiMiddleware;
 use Nogo\Api\Resource\Factory;
 use Nogo\Api\View\Json as JsonView;
 use Nogo\Framework\Controller\SlimController;
 use Slim\Slim;
 
-class Resource implements SlimController
+class ResourceController implements SlimController
 {
 
     /**
@@ -34,15 +33,28 @@ class Resource implements SlimController
         $this->config = $this->app->config('api');
         $this->factory = new Factory($this->config['resources']);
 
-        // Routes
-        $this->app->add(new JsonMiddleware($this->config));
+        // Middleware
         $this->app->add(new Database());
-        $this->app->add(new ResourceIdentifier($this->config));
-        $this->app->get($this->config['prefix'] . '/:resource/:id', [$this, 'getAction'])->conditions(['id' => '\d+']);
-        $this->app->get($this->config['prefix'] . '/:resource', [$this, 'listAction']);
-        $this->app->put($this->config['prefix'] . '/:resource/:id', [$this, 'putAction'])->conditions(['id' => '\d+']);
-        $this->app->post($this->config['prefix'] . '/:resource', [$this, 'postAction']);
-        $this->app->delete($this->config['prefix'] . '/:resource/:id', [$this, 'deleteAction'])->conditions(['id' => '\d+']);
+        $this->app->add(new ApiMiddleware($this->config));
+
+        // Routes
+        $this->app->get($this->config['prefix'] . '/:resource/:id', [$this, 'getAction'])
+                ->conditions(['id' => '\d+'])
+                ->name('resource_get');
+
+        $this->app->get($this->config['prefix'] . '/:resource', [$this, 'listAction'])
+                ->name('resource_get_list');
+        
+        $this->app->put($this->config['prefix'] . '/:resource/:id', [$this, 'putAction'])
+                ->conditions(['id' => '\d+'])
+                ->name('resource_put');
+        
+        $this->app->post($this->config['prefix'] . '/:resource', [$this, 'postAction'])
+                ->name('resource_post');
+
+        $this->app->delete($this->config['prefix'] . '/:resource/:id', [$this, 'deleteAction'])
+                ->conditions(['id' => '\d+'])
+                ->name('resource_delete');
     }
 
     /**
@@ -82,13 +94,8 @@ class Resource implements SlimController
         if (empty($env['slim.input'])) {
             $this->render(['error' => 'Data not valid'], 400);
         } else {
-            $modelClass = $this->factory->getClass($resource);
-
-            $model = new $modelClass();
-            $model->fill($env['slim.input']);
-
+            $model = $this->factory->create($resource, $env['slim.input']);
             $model->save();
-
             $this->render($model->toArray());
         }
     }
@@ -142,14 +149,6 @@ class Resource implements SlimController
         $this->app->response()->setStatus($status);
 
         $this->app->render('', $data);
-    }
-
-    protected function modelWith(array $with = array())
-    {
-        if (isset($config['with']) && !empty($config['with'])) {
-            $with = array_merge($this->config['with'], $with);
-        }
-        return;
     }
 
 }
